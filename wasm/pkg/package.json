@@ -1,0 +1,18 @@
+{
+  "name": "wasm_sha256",
+  "type": "module",
+  "collaborators": [
+    "Your Name <your.email@example.com>"
+  ],
+  "version": "0.1.0",
+  "files": [
+    "wasm_sha256_bg.wasm",
+    "wasm_sha256.js",
+    "wasm_sha256.d.ts"
+  ],
+  "main": "wasm_sha256.js",
+  "types": "wasm_sha256.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
