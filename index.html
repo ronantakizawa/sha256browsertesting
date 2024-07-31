@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <title>Browser-based SHA-256 Benchmarks</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
+    <script src="cryptojs/sha256_cryptojs.js"></script>
 </head>
 <body>
     <h1>Browser-based SHA-256 Benchmarks</h1>
-    <p>Browser APIs, Javascript Libraries, WASM, WebGPU</p>
+    <p>Web Crypto API (Native Browser API), CryptoJS (Javascript Library), WASM, WebGPU</p>
     <button onclick="benchmarkAll()">Run All Benchmarks</button>
     <pre id="results"></pre>
 
@@ -15,11 +16,11 @@
         import init, { sha256 as wasmSha256 } from './wasm/pkg/wasm_sha256.js';
         import { sha256 as webgpuSha256 } from './webgpu/sha256.js';
 
-        const sizes = [10 ** 3, 10 ** 4, 10 ** 5];
-        const iterations = 1000;  // Increase iterations for more accurate results
-        const parallelismFactor = 10;
+        const sizes = [10 ** 5, 10 ** 6, 10 ** 7];
+        const baseIterations = 1000;
+        const epsilon = 0.01; // Small value to prevent division by zero
 
-        async function measureTime(operation) {
+        async function measureTime(operation, iterations) {
             console.log("Starting time measurement...");
             const start = performance.now();
             for (let i = 0; i < iterations; i++) {
@@ -27,20 +28,22 @@
             }
             const end = performance.now();
             console.log("Time measurement completed.");
-            return (end - start) / iterations;
+            const time = (end - start) / iterations;
+            return time < epsilon ? epsilon : time; // Ensure time is never zero
         }
 
         async function measureParallelism(operation) {
             console.log("Starting parallelism measurement...");
             const start = performance.now();
             const promises = [];
-            for (let i = 0; i < parallelismFactor; i++) {
+            for (let i = 0; i < 10; i++) {
                 promises.push(operation());
             }
             await Promise.all(promises);
             const end = performance.now();
             console.log("Parallelism measurement completed.");
-            return (end - start) / parallelismFactor;
+            const time = (end - start) / 10;
+            return time < epsilon ? epsilon : time; // Ensure time is never zero
         }
 
         async function benchmark(hashFunction, label) {
@@ -49,8 +52,9 @@
             for (const size of sizes) {
                 console.log(`Benchmarking data size: ${size}...`);
                 const data = new Uint8Array(size).fill(0x41); // "A" repeated to fill the size
+                const iterations = Math.max(baseIterations / size, 1);
 
-                const timeHash = await measureTime(() => hashFunction(data));
+                const timeHash = await measureTime(() => hashFunction(data), iterations);
                 const throughput = (size / timeHash / 1000).toFixed(2); // KB/s
                 const parallelismTime = await measureParallelism(() => hashFunction(data));
 
@@ -62,22 +66,33 @@
         }
 
         async function benchmarkWebCrypto() {
-            const hashFunction = async (data) => window.crypto.subtle.digest("SHA-256", data);
+            const hashFunction = async (data) => {
+                const start = performance.now();
+                await window.crypto.subtle.digest("SHA-256", data);
+                const end = performance.now();
+                return end - start;
+            };
             return await benchmark(hashFunction, "WebCrypto API");
         }
 
         async function benchmarkCryptoJS() {
             const hashFunction = async (data) => {
-                const wordArray = CryptoJS.lib.WordArray.create(data);
-                const hash = CryptoJS.SHA256(wordArray);
-                return CryptoJS.enc.Hex.stringify(hash);
+                const start = performance.now();
+                timedCryptoJS_SHA256(data);
+                const end = performance.now();
+                return end - start;
             };
             return await benchmark(hashFunction, "CryptoJS");
         }
 
         async function benchmarkWasm() {
             await init(); // Initialize the WASM module
-            const hashFunction = async (data) => wasmSha256(data);
+            const hashFunction = async (data) => {
+                const start = performance.now();
+                wasmSha256(data);
+                const end = performance.now();
+                return end - start;
+            };
             return await benchmark(hashFunction, "WASM");
         }
 
@@ -85,14 +100,19 @@
             if (!navigator.gpu) {
                 return 'WebGPU not supported on this browser.\n';
             }
-            const hashFunction = async (data) => await webgpuSha256(data);
+            const hashFunction = async (data) => {
+                const start = performance.now();
+                await webgpuSha256(data);
+                const end = performance.now();
+                return end - start;
+            };
             return await benchmark(hashFunction, "WebGPU");
         }
 
         window.benchmarkAll = async function benchmarkAll() {
             console.log("Starting all benchmarks...");
             const results = document.getElementById('results');
-            results.textContent = 'Running...(Takes about 2 minutes)';
+            results.textContent = 'Running...(Takes abvout a minute, check console for progress)';
 
             const webCryptoResult = await benchmarkWebCrypto();
             const cryptoJSResult = await benchmarkCryptoJS();

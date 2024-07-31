@@ -40,7 +40,15 @@ export function sha256(data) {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
         const ptr0 = passArray8ToWasm0(data, wasm.__wbindgen_malloc);
         const len0 = WASM_VECTOR_LEN;
+
+        // Start precise timing here
+        const start = performance.now();
+
         wasm.sha256(retptr, ptr0, len0);
+
+        const end = performance.now();
+        console.log(`WASM SHA-256 time: ${(end - start).toFixed(5)} ms`);
+
         var r0 = getInt32Memory0()[retptr / 4 + 0];
         var r1 = getInt32Memory0()[retptr / 4 + 1];
         var v2 = getArrayU8FromWasm0(r0, r1).slice();

@@ -75,10 +75,17 @@ export const sha256 = async (inputArray) => {
 
     commandEncoder.copyBufferToBuffer(resultMatrixBuffer, 0, gpuReadBuffer, 0, resultMatrixBufferSize);
     const gpuCommands = commandEncoder.finish();
+
+    // Start precise timing here
+    const start = performance.now();
+
     device.queue.submit([gpuCommands]);
 
     await gpuReadBuffer.mapAsync(GPUMapMode.READ);
     const arrayBuffer = gpuReadBuffer.getMappedRange();
+
+    const end = performance.now();
+    console.log(`WebGPU SHA-256 time: ${(end - start).toFixed(5)} ms`);
 
     let str = "";
     for (let value of Array.from(new Uint32Array(arrayBuffer))) {
