@@ -16,19 +16,20 @@
         import { sha256 as webgpuSha256 } from './webgpu/sha256.js';
 
         const sizes = [10 ** 3, 10 ** 4, 10 ** 5, 10 ** 6];
-        const iterations = 10;
+        const iterations = 10;  // Increase iterations for more accurate results
         const parallelismFactor = 10;
+        const epsilon = 0.001;  // Small constant to avoid zero division
 
         async function measureTime(operation) {
             console.log("Starting time measurement...");
             const start = performance.now();
             for (let i = 0; i < iterations; i++) {
-                if (i % 100 === 0) console.log(`Time measurement iteration: ${i}`);
                 await operation();
             }
             const end = performance.now();
             console.log("Time measurement completed.");
-            return (end - start) / iterations;
+            const time = (end - start) / iterations;
+            return time < epsilon ? epsilon : time;  // Ensure a minimum time threshold
         }
 
         async function measureParallelism(operation) {
@@ -36,13 +37,13 @@
             const start = performance.now();
             const promises = [];
             for (let i = 0; i < parallelismFactor; i++) {
-                if (i % 2 === 0) console.log(`Parallelism measurement iteration: ${i}`);
                 promises.push(operation());
             }
             await Promise.all(promises);
             const end = performance.now();
             console.log("Parallelism measurement completed.");
-            return (end - start) / parallelismFactor;
+            const time = (end - start) / parallelismFactor;
+            return time < epsilon ? epsilon : time;  // Ensure a minimum time threshold
         }
 
         async function benchmark(hashFunction, label) {
