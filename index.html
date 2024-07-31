@@ -14,7 +14,7 @@
         import init, { sha256 as wasmSha256 } from './wasm/pkg/wasm_sha256.js';
         import { sha256 as webgpuSha256 } from './webgpu/sha256.js';
 
-        const sizes = [10 ** 3, 10 ** 4, 10 ** 5, 10 ** 6, 10 ** 7];
+        const sizes = [10 ** 3, 10 ** 4, 10 ** 5, 10 ** 6];
         const iterations = 10;
         const parallelismFactor = 10;
 
@@ -22,6 +22,7 @@
             console.log("Starting time measurement...");
             const start = performance.now();
             for (let i = 0; i < iterations; i++) {
+                if (i % 100 === 0) console.log(`Time measurement iteration: ${i}`);
                 await operation();
             }
             const end = performance.now();
@@ -34,6 +35,7 @@
             const start = performance.now();
             const promises = [];
             for (let i = 0; i < parallelismFactor; i++) {
+                if (i % 2 === 0) console.log(`Parallelism measurement iteration: ${i}`);
                 promises.push(operation());
             }
             await Promise.all(promises);
@@ -50,7 +52,7 @@
                 const data = new Uint8Array(size).fill(0x41); // "A" repeated to fill the size
 
                 const timeHash = await measureTime(() => hashFunction(data));
-                const throughput = (size / timeHash / 1024).toFixed(2); // KB/s
+                const throughput = (size / timeHash / 1000).toFixed(2); // KB/s
                 const parallelismTime = await measureParallelism(() => hashFunction(data));
 
                 results.push(`Data Size: ${size} - Hashing: ${timeHash.toFixed(5)} ms - Throughput: ${throughput} KB/s - Parallelism Time: ${parallelismTime.toFixed(5)} ms`);
