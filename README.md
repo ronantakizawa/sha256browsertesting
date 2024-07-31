@@ -1,6 +1,6 @@
 # Testing SHA-256 Algorithms on the Browser (Browser APIs, Javascript Libraries, WASM, WebGPU)
-**
-Final Results**
+
+**Final Results**
 
 WebCrypto API:
 Data Size: 100000 - Hashing: 8.00000 ms - Throughput: 12.50 KB/s - Parallelism Time: 4.70000 ms
