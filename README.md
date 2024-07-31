@@ -1,5 +1,7 @@
 # Testing SHA-256 Algorithms on the Browser (Browser APIs, Javascript Libraries, WASM, WebGPU)
 
+Full article: https://medium.com/@ronantech/exploring-sha-256-performance-on-the-browser-browser-apis-javascript-libraries-wasm-webgpu-9d9e8e681c81
+
 **Final Results**
 
 WebCrypto API:
