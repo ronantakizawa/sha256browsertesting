@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Crypto Benchmark</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
+</head>
+<body>
+    <h1>Crypto Benchmark</h1>
+    <button onclick="benchmarkAll()">Run All Benchmarks</button>
+    <pre id="results"></pre>
+
+    <script type="module">
+        import init, { sha256 as wasmSha256 } from './wasm/pkg/wasm_sha256.js';
+        import { sha256 as webgpuSha256 } from './webgpu/sha256.js';
+
+        const sizes = [10 ** 3, 10 ** 4, 10 ** 5, 10 ** 6, 10 ** 7];
+        const iterations = 10;
+        const parallelismFactor = 10;
+
+        async function measureTime(operation) {
+            console.log("Starting time measurement...");
+            const start = performance.now();
+            for (let i = 0; i < iterations; i++) {
+                await operation();
+            }
+            const end = performance.now();
+            console.log("Time measurement completed.");
+            return (end - start) / iterations;
+        }
+
+        async function measureParallelism(operation) {
+            console.log("Starting parallelism measurement...");
+            const start = performance.now();
+            const promises = [];
+            for (let i = 0; i < parallelismFactor; i++) {
+                promises.push(operation());
+            }
+            await Promise.all(promises);
+            const end = performance.now();
+            console.log("Parallelism measurement completed.");
+            return (end - start) / parallelismFactor;
+        }
+
+        async function benchmark(hashFunction, label) {
+            console.log(`Starting benchmark for ${label}...`);
+            const results = [];
+            for (const size of sizes) {
+                console.log(`Benchmarking data size: ${size}...`);
+                const data = new Uint8Array(size).fill(0x41); // "A" repeated to fill the size
+
+                const timeHash = await measureTime(() => hashFunction(data));
+                const throughput = (size / timeHash / 1024).toFixed(2); // KB/s
+                const parallelismTime = await measureParallelism(() => hashFunction(data));
+
+                results.push(`Data Size: ${size} - Hashing: ${timeHash.toFixed(5)} ms - Throughput: ${throughput} KB/s - Parallelism Time: ${parallelismTime.toFixed(5)} ms`);
+                console.log(`Completed benchmarking data size: ${size}.`);
+            }
+            console.log(`Completed benchmark for ${label}.`);
+            return `${label}:\n${results.join("\n")}\n`;
+        }
+
+        async function benchmarkWebCrypto() {
+            const hashFunction = async (data) => window.crypto.subtle.digest("SHA-256", data);
+            return await benchmark(hashFunction, "WebCrypto API");
+        }
+
+        async function benchmarkCryptoJS() {
+            const hashFunction = async (data) => {
+                const wordArray = CryptoJS.lib.WordArray.create(data);
+                const hash = CryptoJS.SHA256(wordArray);
+                return CryptoJS.enc.Hex.stringify(hash);
+            };
+            return await benchmark(hashFunction, "CryptoJS");
+        }
+
+        async function benchmarkWasm() {
+            await init(); // Initialize the WASM module
+            const hashFunction = async (data) => wasmSha256(data);
+            return await benchmark(hashFunction, "WASM");
+        }
+
+        async function benchmarkWebGPU() {
+            if (!navigator.gpu) {
+                return 'WebGPU not supported on this browser.\n';
+            }
+            const hashFunction = async (data) => await webgpuSha256(data);
+            return await benchmark(hashFunction, "WebGPU");
+        }
+
+        window.benchmarkAll = async function benchmarkAll() {
+            console.log("Starting all benchmarks...");
+            const results = document.getElementById('results');
+            results.textContent = 'Running...';
+
+            const webCryptoResult = await benchmarkWebCrypto();
+            const cryptoJSResult = await benchmarkCryptoJS();
+            const wasmResult = await benchmarkWasm();
+            const webGPUResult = await benchmarkWebGPU();
+
+            results.textContent = `${webCryptoResult}\n${cryptoJSResult}\n${wasmResult}\n${webGPUResult}`;
+            console.log("Completed all benchmarks.");
+        };
+    </script>
+</body>
+</html>
