@@ -15,10 +15,9 @@
         import init, { sha256 as wasmSha256 } from './wasm/pkg/wasm_sha256.js';
         import { sha256 as webgpuSha256 } from './webgpu/sha256.js';
 
-        const sizes = [10 ** 3, 10 ** 4, 10 ** 5, 10 ** 6];
-        const iterations = 10;  // Increase iterations for more accurate results
+        const sizes = [10 ** 3, 10 ** 4, 10 ** 5];
+        const iterations = 1000;  // Increase iterations for more accurate results
         const parallelismFactor = 10;
-        const epsilon = 0.001;  // Small constant to avoid zero division
 
         async function measureTime(operation) {
             console.log("Starting time measurement...");
@@ -28,8 +27,7 @@
             }
             const end = performance.now();
             console.log("Time measurement completed.");
-            const time = (end - start) / iterations;
-            return time < epsilon ? epsilon : time;  // Ensure a minimum time threshold
+            return (end - start) / iterations;
         }
 
         async function measureParallelism(operation) {
@@ -42,8 +40,7 @@
             await Promise.all(promises);
             const end = performance.now();
             console.log("Parallelism measurement completed.");
-            const time = (end - start) / parallelismFactor;
-            return time < epsilon ? epsilon : time;  // Ensure a minimum time threshold
+            return (end - start) / parallelismFactor;
         }
 
         async function benchmark(hashFunction, label) {
@@ -95,7 +92,7 @@
         window.benchmarkAll = async function benchmarkAll() {
             console.log("Starting all benchmarks...");
             const results = document.getElementById('results');
-            results.textContent = 'Running...';
+            results.textContent = 'Running...(Takes about 2 minutes)';
 
             const webCryptoResult = await benchmarkWebCrypto();
             const cryptoJSResult = await benchmarkCryptoJS();
