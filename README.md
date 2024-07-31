@@ -2,6 +2,8 @@
 
 Full article: https://medium.com/@ronantech/exploring-sha-256-performance-on-the-browser-browser-apis-javascript-libraries-wasm-webgpu-9d9e8e681c81
 
+<img width="1283" alt="Screenshot 2024-07-31 at 6 38 36 PM" src="https://github.com/user-attachments/assets/663c0e68-a0a8-4702-b51c-eea5ae66f75d">
+
 **Final Results**
 
 WebCrypto API:
